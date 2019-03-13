@@ -1,7 +1,7 @@
 # Microsoft Dynamics CRM API dynamics SilverStripe 
 
 **Register your Azure application to communicate with CRM**
-1. Create a user account in your Microsoft 365 environment to be used as the token generator for your web application (e.g. webtoken@your_organisation.onmicrosoft.com).
+1. Create a user account in your Microsoft 365 environment to be used as the token generator for your web application (e.g. webtoken@your_organisation.onmicrosoft.com). 
 2. Add the user account to Dynamics 365 preferably with full permissions.
 3. In Microsoft Azure Active Directory, create a Native Application in the App Registrations area.
 ![Step 3](images/azure1.png)
