@@ -1,0 +1,4 @@
+mappings:
+  CRM: OP\\CRM
+  CRMConnection: OP\\CRMConnection
+  CRMResult: OP\\CRMResult
