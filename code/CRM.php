@@ -26,8 +26,8 @@ class CRM
     * @config default headers used for communication
     */
     private static $headers = [
-        "Content-Type: application/x-www-form-urlencoded",
-        "Accept: application/json"
+        "Content-Type" => "application/x-www-form-urlencoded",
+        "Accept" => "application/json"
     ];
 
     /*
@@ -87,6 +87,15 @@ class CRM
 
         $grant_type = isset($params['grant_type']) ? $params['grant_type'] : "password";
 
+        if ($grant_type === "client_credentials") {
+            return [
+                "grant_type" => $grant_type,
+                "resource" => $resource,
+                "client_secret" => $client_secret,
+                "client_id" => $client_id
+            ];
+        }
+
         // build the post paramaters
         return [
             "grant_type" => $grant_type,
@@ -112,9 +121,14 @@ class CRM
         $session = curl_init($endpoint);
 
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($session, CURLOPT_HTTPHEADER, $this->config()->headers);
+        curl_setopt($session, CURLOPT_HTTPHEADER, $this->HeadersDeAssociative($this->config()->headers));
         curl_setopt($session, CURLOPT_CONNECTTIMEOUT, 5);
         curl_setopt($session, CURLOPT_POST, true);
+        //curl_setopt($session, CURLOPT_IPRESOLVE, true);
+        // curl_setopt($session, CURL_IPRESOLVE_V4, true);
+        curl_setopt($session, CURLOPT_ENCODING, true);
+
+
 
         // build the post paramaters
         curl_setopt($session, CURLOPT_POSTFIELDS, http_build_query($this->CreateTokenHTTPQuery()));
@@ -162,28 +176,43 @@ class CRM
         return '';
     }
 
+    /**
+     * 
+     */
+    public function HeadersDeAssociative($headers)
+    {
+        $retarray = [];
+        foreach ($headers as $key => $header) {
+            $retarray[] = $key . ": " . $header;
+        }
+
+        return $retarray;
+    }
+
 
     /**
      * Fetches data from the CRM service
      * 
      * @param string webservice_url_str the service
      * @param string $method delete, get, put or post data
-     * @param array $postfields data to place into post fields
+     * @param array $postdata data to place into post fields
      * @param array $extra_headers headers to insert
      */
-    public function fetch($webservice_url_str, $method = "GET", $postfields = array(), $extra_headers = array())
+    public function fetch($webservice_url_str, $method = "GET", $postdata = null, $extra_headers = [])
     {
-
         $session = curl_init($webservice_url_str);
-        $headers = array(
-            "Content-Type: application/json",
-            "Accept: application/json",
-            "Authorization: Bearer " .  $this->access_token
-        );
-        $headers = array_merge($headers, $extra_headers);
+
+        // build the auth headers
+        $authheader = array_merge($this->config()->headers, [
+            "Authorization"=>" Bearer " .  $this->access_token
+        ]);
+        $headers = array_merge($authheader, $extra_headers);
+        curl_setopt($session, CURLOPT_HTTPHEADER, $this->HeadersDeAssociative($headers));
+
+        // return data and try for 5 seconds
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+
         //CWP proxy stuff
         if (Environment::getEnv('SS_OUTBOUND_PROXY') && Environment::getEnv('SS_OUTBOUND_PROXY_PORT')) {
             curl_setopt($session, CURLOPT_PROXY, Environment::getEnv('SS_OUTBOUND_PROXY'));
@@ -209,9 +238,13 @@ class CRM
                 break;
         }
 
-        if (!empty($postfields)) {
-            $jsonpostfields = json_encode($postfields);
-            curl_setopt($session, CURLOPT_POSTFIELDS, $jsonpostfields);
+        if (isset($postdata) && $postdata) {
+            if (is_array($postdata)) {
+                $jsonpostfields = json_encode($postdata);
+                curl_setopt($session, CURLOPT_POSTFIELDS, $jsonpostfields);
+            } else {
+                curl_setopt($session, CURLOPT_POSTFIELDS, $postdata);
+            }
         }
 
         $content = curl_exec($session);
