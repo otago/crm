@@ -153,7 +153,7 @@ class CRM
         // set the cache and the time to live according to the result
         if (isset($content->expires_in)) {
             $cache = new FilesystemCache('OP');
-            $this->access_token = $cache->set($this->getCacheKey(), $content->access_token, (int)$content->expires_in);
+            $this->access_token = $cache->set($this->getCacheKey(), $content->access_token, (int) $content->expires_in);
         }
 
         return $content->access_token;
@@ -204,7 +204,7 @@ class CRM
 
         // build the auth headers
         $authheader = array_merge($this->config()->headers, [
-            "Authorization"=>" Bearer " .  $this->access_token
+            "Authorization" => " Bearer " .  $this->access_token
         ]);
         $headers = array_merge($authheader, $extra_headers);
         curl_setopt($session, CURLOPT_HTTPHEADER, $this->HeadersDeAssociative($headers));
@@ -212,6 +212,8 @@ class CRM
         // return data and try for 5 seconds
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($session, CURLOPT_VERBOSE, 1);
+        curl_setopt($session, CURLOPT_HEADER, 1);
 
         //CWP proxy stuff
         if (Environment::getEnv('SS_OUTBOUND_PROXY') && Environment::getEnv('SS_OUTBOUND_PROXY_PORT')) {
@@ -247,11 +249,16 @@ class CRM
             }
         }
 
-        $content = curl_exec($session);
+        $response = curl_exec($session);
         $code = curl_getinfo($session, CURLINFO_HTTP_CODE);
+
+        $header_size = curl_getinfo($session, CURLINFO_HEADER_SIZE);
+        $resultheaders = substr($response, 0, $header_size);
+        $content = substr($response, $header_size);
+
         curl_close($session);
 
-        return new CRMResult($content, $code);
+        return new CRMResult($content, $code, $resultheaders);
     }
 
     /**

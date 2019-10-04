@@ -18,11 +18,13 @@ class CRMResult
 
     private $body;
     private $code;
+    private $headers;
 
-    public function __construct($body, $code)
+    public function __construct($body, $code, $headers)
     {
         $this->body = $body;
         $this->code = $code;
+        $this->headers = $headers;
     }
 
     /**
@@ -82,5 +84,14 @@ class CRMResult
     public function Body()
     {
         return $this->body;
+    }
+
+    /**
+     * returns the raw header data
+     * @return string
+     */
+    public function getHeaders()
+    {
+        return $this->headers;
     }
 }
