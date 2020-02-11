@@ -197,6 +197,7 @@ class CRM
      * @param string $method delete, get, put or post data
      * @param array $postdata data to place into post fields
      * @param array $extra_headers headers to insert
+     * @return CRMResult
      */
     public function fetch($webservice_url_str, $method = "GET", $postdata = null, $extra_headers = [])
     {
