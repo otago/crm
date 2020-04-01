@@ -213,7 +213,7 @@ class CRM
         // return data and try for 5 seconds
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($session, CURLOPT_VERBOSE, 1);
+       // curl_setopt($session, CURLOPT_VERBOSE, 1);
         curl_setopt($session, CURLOPT_HEADER, 1);
 
         //CWP proxy stuff
