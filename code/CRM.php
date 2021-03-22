@@ -19,9 +19,6 @@ class CRM
     // the token used to send and retrive data from the CRM API REST service
     private $access_token = '';
 
-    // connection paramaters (if overwritten)
-    private $paramsoverwrite = null;
-
     /*
     * @config default headers used for communication
     */
@@ -30,22 +27,13 @@ class CRM
         "Accept" => "application/json"
     ];
 
-    /*
-    * @config url of the target
-    */
-    private static $endpoint = "https://login.microsoftonline.com/common/oauth2/token";
-
     /**
      * Builds the query used to fetch the token. is able to use
      * client_credentials or password authentication methods
      * 
-     * @param array $params optional associative array in the format of
-     *  ['client_secret'=>, 'client_id'=>, 'username'=>, 'password'=>,  'endpoint'=>, 'grant_type'=>]
-     * 
      */
-    public function __construct($params = [])
+    public function __construct()
     {
-        $this->paramsoverwrite = $params;
 
         $cache = new FilesystemCache('OP');
 
@@ -75,36 +63,21 @@ class CRM
      */
     protected function CreateTokenHTTPQuery()
     {
-        // you can set the paramaters manually, or via yml config
-        $params = $this->paramsoverwrite;
-
-        // fetch the paramaters from the yml config, or from the paramaters override
-        $resource = $this->getResourceURL();
-        $client_secret = isset($params['client_secret']) ? $params['client_secret'] : $this->config()->client_secret;
-        $client_id = isset($params['client_id']) ?  $params['client_id'] : $this->config()->client_id;
-        $username = isset($params['username']) ?  $params['username'] : $this->config()->username;
-        $password = isset($params['password']) ? $params['password'] : $this->config()->password;
-
-        $grant_type = isset($params['grant_type']) ? $params['grant_type'] : "password";
-
-        if ($grant_type === "client_credentials") {
-            return [
-                "grant_type" => $grant_type,
-                "resource" => $resource,
-                "client_secret" => $client_secret,
-                "client_id" => $client_id
-            ];
-        }
-
-        // build the post paramaters
         return [
-            "grant_type" => $grant_type,
-            "resource" => $resource,
-            "client_secret" => $client_secret,
-            "client_id" => $client_id,
-            "username" => $username,
-            "password" => $password
+            "grant_type" => 'client_credentials',
+            "resource" => Environment::getEnv('AZUREAPPLICATIONRESOURCELOCATION'),
+            "client_secret" => Environment::getEnv('AZUREAPPLICATIONSECRET'),
+            "client_id" => Environment::getEnv('AZUREAPPLICATIONCLIENT')
         ];
+    }
+
+    /**
+     * returns the resource of where the data is coming from
+     * 
+     * @return string
+     */
+    public function getResourceURL() {
+        return Environment::getEnv('AZUREAPPLICATIONRESOURCELOCATION');
     }
 
     /**
@@ -114,21 +87,15 @@ class CRM
      */
     private function RequestAccessToken()
     {
-        $params = $this->paramsoverwrite;
-
         // endpoint url
-        $endpoint = isset($params['endpoint']) ?  $params['endpoint'] : $this->config()->endpoint;
+        $endpoint = Environment::getEnv('AZUREAPPLICATIONENDPOINT');
         $session = curl_init($endpoint);
 
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_HTTPHEADER, $this->HeadersDeAssociative($this->config()->headers));
         curl_setopt($session, CURLOPT_CONNECTTIMEOUT, 5);
         curl_setopt($session, CURLOPT_POST, true);
-        //curl_setopt($session, CURLOPT_IPRESOLVE, true);
-        // curl_setopt($session, CURL_IPRESOLVE_V4, true);
         curl_setopt($session, CURLOPT_ENCODING, true);
-
-
 
         // build the post paramaters
         curl_setopt($session, CURLOPT_POSTFIELDS, http_build_query($this->CreateTokenHTTPQuery()));
@@ -157,23 +124,6 @@ class CRM
         }
 
         return $content->access_token;
-    }
-
-    /**
-     * the resouce you want access too 
-     * 
-     * @param string the url of the resource 
-     */
-    public function getResourceURL()
-    {
-        if (Director::isTest()) {
-            return $this->config()->locationTest;
-        } else if (Director::isDev()) {
-            return $this->config()->locationDev;
-        } else if (Director::isLive()) {
-            return $this->config()->locationLive;
-        }
-        return '';
     }
 
     /**
