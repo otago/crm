@@ -13,23 +13,18 @@
 ![Step 6](images/azure4.png)
 7. You should now have everything you need to use the CRM module.
 
+# Using the Envornment version:
 ==================
 
-**Add your application details into crm.yml**
+**Add your application details into .env**
 
-Create a mysite/_config/crm.yml file and add the following:
+Create a .env file and add the following:
 
-	---
-	Name: CRM
-	---
-	CRMConnection:
-	  username: webtoken@your_organisation.onmicrosoft.com
-	  password: XXXXXXXX // Microsoft account password
-	  client_secret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-	  client_id: xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-	  locationTest: https://your_test_organisation.crm5.dynamics.com
-	  locationDev: https://your_dev_organisation.crm5.dynamics.com
-	  locationLive: https://your_organisation.crm5.dynamics.com
+
+    AZUREAPPLICATIONCLIENT="XXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX"
+    AZUREAPPLICATIONSECRET="my secret key that came from azure portal"
+    AZUREAPPLICATIONENDPOINT="https://login.microsoftonline.com/XXXXXXXXXXXXX/oauth2/token"
+    AZUREAPPLICATIONRESOURCELOCATION="https://<myorganisationcrmname>.dynamics.com"
 
 ==================
 
