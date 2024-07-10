@@ -17,14 +17,16 @@ use OP\CRM;
 $operations = [
     [
         'method' => 'DELETE',
-        'url' => "/op_supportneeds(op_supporttypeid=3,contact=2)",
+        'url' => "/Lead(LeadID=3)",
     ],
     [
         'method' => 'POST',
-        'url' => "/op_supportneeds",
+        'url' => "/Lead",
         'data' => [
-            'op_supporttypeid' => 4,
-            'contact' => 2,
+            "FirstName" => "John",
+            "LastName" => "Doe",
+            "Email" => "john.doe@example.com",
+            "Phone" => "123-456-7890",
         ],
     ],
 ];
