@@ -32,7 +32,7 @@ $operations = [
 // Step 2: Send the batch request
 $response = CRM::sendBatchRequest($operations);
 
-// Step 3: Handle the response
+// Step 3: Optionally Handle the Fibre. If you want to check the fibre result, this will cause it to block
 echo $response;
 ```
 
