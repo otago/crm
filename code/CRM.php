@@ -8,6 +8,9 @@ use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Environment;
 use Exception;
+use Fiber;
+use Psr\Log\LoggerInterface;
+use SilverStripe\Core\Injector\Injector;
 use Symfony\Component\Cache\Simple\FilesystemCache;
 use SilverStripe\Dev\Debug;
 
@@ -54,6 +57,14 @@ class CRM
         return 'CRMConnection.token' . hash('md5', json_encode($this->CreateTokenHTTPQuery()));
     }
 
+    /**
+     * @return string access token
+     */
+    public function getAccessToken()
+    {
+        return $this->access_token;
+    }
+
 
     /**
      * Builds the query used to fetch the token. is able to use
@@ -76,7 +87,8 @@ class CRM
      * 
      * @return string
      */
-    public function getResourceURL() {
+    public function getResourceURL()
+    {
         return Environment::getEnv('AZUREAPPLICATIONRESOURCELOCATION');
     }
 
@@ -127,7 +139,8 @@ class CRM
     }
 
     /**
-     * 
+     * build the array of 
+     * @param array of headers
      */
     public function HeadersDeAssociative($headers)
     {
@@ -163,7 +176,7 @@ class CRM
         // return data and try for 5 seconds
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_CONNECTTIMEOUT, 5);
-       // curl_setopt($session, CURLOPT_VERBOSE, 1);
+        // curl_setopt($session, CURLOPT_VERBOSE, 1);
         curl_setopt($session, CURLOPT_HEADER, 1);
 
         //CWP proxy stuff
@@ -221,5 +234,103 @@ class CRM
     {
         $crm = CRM::create();
         return $crm->fetch($webservice_url_str, $method, $param, $extra_headers);
+    }
+
+    /**
+     * Sends a batch request to the CRM service
+     *  @example // Step 1: Create operations
+     *  $operations = [
+     *       [
+     *          'method' => 'DELETE',
+     *          'url' => "/op_supportneeds(op_supporttypeid=3,contact=2)",
+     *      ],
+     *      [
+     *          'method' => 'POST',
+     *          'url' => "/op_supportneeds",
+     *          'data' => [
+     *              'op_supporttypeid' => 4,
+     *              'contact' => 2,
+     *          ],
+     *      ],
+     *  ];
+     *
+     * // Step 2: Convert operations to batch request
+     *  $batchRequest = sendBatchRequest($operations);
+     * @param array $operations
+     * @return Fiber
+     */
+    public static function sendBatchRequest(array $operations)
+    {
+        $crm = CRM::create();
+        $accesstoken = $crm->getAccessToken();
+        $baseurl = $crm->getResourceURL() . '/api/data/v9.1/';
+
+        $fiber = new Fiber(function () use ($operations,  $accesstoken, $baseurl) {
+            // Create a unique boundary string
+            $boundary = uniqid();
+
+            // Initialize the batch request body
+            $body = '';
+
+            // Add each operation to the batch request body
+            foreach ($operations as $i => $operation) {
+                $url = '/api/data/v9.1' . $operation['url'];
+
+                $body .= "--$boundary\r\n";
+                $body .= "Content-Type: application/http\r\n";
+                $body .= "Content-Transfer-Encoding: binary\r\n";
+                $body .= "\r\n";
+                $body .= "{$operation['method']} {$url} HTTP/1.1\r\n";
+                $body .= "Content-ID: $i\r\n";
+                if (isset($operation['data'])) {
+                    $body .= "Content-Type: application/json\r\n";
+                    $body .= "OData-MaxVersion: 4.0\r\n";
+                    $body .= "OData-Version: 4.0\r\n";
+                    $body .= "\r\n";
+                    $body .= json_encode($operation['data']);
+                }
+                $body .= "\r\n";
+            }
+
+            // End the batch request body
+            $body .= "--$boundary--\r\n";
+
+            // Initialize cURL session
+            $session = curl_init($baseurl . '$batch');
+
+            // Set cURL options
+            curl_setopt($session, CURLOPT_CUSTOMREQUEST, 'POST');
+            curl_setopt($session, CURLOPT_POSTFIELDS, $body);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($session, CURLOPT_HTTPHEADER, [
+                'Content-Type: multipart/mixed; boundary=' . $boundary,
+                'Content-Length: ' . strlen($body),
+                'Authorization: Bearer ' .  $accesstoken,
+            ]);
+
+            // Execute cURL session
+            $response = curl_exec($session);
+
+            // Check for cURL errors
+            if (curl_errno($session)) {
+                Injector::inst()->get(LoggerInterface::class)->info('Error in sendBatchRequest' . $response);
+            }
+
+            // Check HTTP status code
+            $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
+            if ($httpCode < 200 || $httpCode >= 300) {
+                Injector::inst()->get(LoggerInterface::class)->info('Error in sendBatchRequest' . $response);
+            }
+            // Close cURL session
+            curl_close($session);
+
+            // Return the response
+            return $response;
+        });
+
+        // Start the Fiber
+        $fiber->start();
+
+        return $fiber;
     }
 }
