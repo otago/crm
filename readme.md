@@ -11,7 +11,7 @@ To use `sendBatchRequest`, you need to prepare an array of operations you wish t
 #### Example:
 
 ```php
-require_once 'CRM.php';
+use OP\CRM;
 
 // Step 1: Define the operations
 $operations = [
