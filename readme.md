@@ -1,5 +1,59 @@
 # Microsoft Dynamics CRM API dynamics SilverStripe 
 
+## Using `sendBatchRequest` in CRM Integration
+
+The `sendBatchRequest` function is a powerful function for interacting with CRM, allowing you to perform multiple operations in a single HTTP request. This method is particularly useful for applications that need to execute several CRUD (Create, Read, Update, Delete) operations on a CRM system efficiently. Below are examples, use cases, and advantages of using `sendBatchRequest`.
+
+### How to Use `sendBatchRequest`
+
+To use `sendBatchRequest`, you need to prepare an array of operations you wish to perform. Each operation in the array should specify the HTTP method (`POST`, `GET`, `DELETE`, etc.), the target URL (relative to the CRM base URL), and, if applicable, the data payload.
+
+#### Example:
+
+```php
+require_once 'CRM.php';
+
+// Step 1: Define the operations
+$operations = [
+    [
+        'method' => 'DELETE',
+        'url' => "/op_supportneeds(op_supporttypeid=3,contact=2)",
+    ],
+    [
+        'method' => 'POST',
+        'url' => "/op_supportneeds",
+        'data' => [
+            'op_supporttypeid' => 4,
+            'contact' => 2,
+        ],
+    ],
+];
+
+// Step 2: Send the batch request
+$response = CRM::sendBatchRequest($operations);
+
+// Step 3: Handle the response
+echo $response;
+```
+
+## you can handle other operations while `sendBatchRequest` executes in the background
+
+sendBatchRequest sends requests using cURL in a Fiber for asynchronous execution. It sets up HTTP headers, including Content-Length and Authorization with a bearer token, and executes a cURL session to send the request. It checks for cURL errors and HTTP status codes outside the 200-299 range, logging any issues encountered using a LoggerInterface. After executing the request and handling errors, it closes the cURL session and returns the response. The operation is wrapped in a Fiber, allowing it to run concurrently with other tasks, and the Fiber is started before the method returns the Fiber object itself. This approach enhances performance by enabling non-blocking I/O operations.
+
+### When to Use `sendBatchRequest`
+
+- **Bulk Data Operations**: When you need to perform multiple operations on the CRM data, such as creating, updating, or deleting several records at once.
+- **Efficiency**: To reduce the number of HTTP requests made to the CRM server, thereby minimizing network latency and improving the overall performance of your application.
+- **Transactional Operations**: If your use case requires that multiple operations be treated as a single transaction (i.e., all succeed or all fail together).
+
+### Why `sendBatchRequest` Is Great
+
+- **Performance Optimization**: By bundling multiple operations into a single request, `sendBatchRequest` significantly reduces the overhead caused by HTTP request/response cycles.
+- **Simplified Error Handling**: Handling errors becomes simpler because you only need to parse a single response, even when performing multiple operations.
+- **Enhanced Scalability**: Applications that frequently interact with CRM data can scale more effectively, as the reduced number of HTTP requests lowers the strain on both the client and server resources.
+- **Transactional Integrity**: For CRMs that support transactional batches, `sendBatchRequest` can ensure that a set of operations either all succeed or fail together, maintaining data integrity.
+
+
 **Register your Azure application to communicate with CRM**
 1. Create a user account in your Microsoft 365 environment to be used as the token generator for your web application (e.g. webtoken@your_organisation.onmicrosoft.com). 
 2. Add the user account to Dynamics 365 preferably with full permissions.
