@@ -10,8 +10,8 @@ use SilverStripe\Core\Environment;
 use Exception;
 use Fiber;
 use Psr\Log\LoggerInterface;
+use Psr\SimpleCache\CacheInterface;
 use SilverStripe\Core\Injector\Injector;
-use Symfony\Component\Cache\Simple\FilesystemCache;
 use SilverStripe\Dev\Debug;
 
 class CRM
@@ -37,8 +37,7 @@ class CRM
      */
     public function __construct()
     {
-
-        $cache = new FilesystemCache('OP');
+        $cache = Injector::inst()->get(CacheInterface::class . '.OP');
 
         if ($cache->has($this->getCacheKey())) {
             $this->access_token = $cache->get($this->getCacheKey());
@@ -87,8 +86,7 @@ class CRM
      * 
      * @return string
      */
-    public function getResourceURL()
-    {
+    public function getResourceURL() {
         return Environment::getEnv('AZUREAPPLICATIONRESOURCELOCATION');
     }
 
@@ -131,7 +129,7 @@ class CRM
 
         // set the cache and the time to live according to the result
         if (isset($content->expires_in)) {
-            $cache = new FilesystemCache('OP');
+            $cache = Injector::inst()->get(CacheInterface::class . '.OP');
             $this->access_token = $cache->set($this->getCacheKey(), $content->access_token, (int) $content->expires_in);
         }
 
@@ -176,7 +174,7 @@ class CRM
         // return data and try for 5 seconds
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_CONNECTTIMEOUT, 5);
-        // curl_setopt($session, CURLOPT_VERBOSE, 1);
+       // curl_setopt($session, CURLOPT_VERBOSE, 1);
         curl_setopt($session, CURLOPT_HEADER, 1);
 
         //CWP proxy stuff

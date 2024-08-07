@@ -69,6 +69,9 @@ sendBatchRequest sends requests using cURL in a Fiber for asynchronous execution
 ![Step 6](images/azure4.png)
 7. You should now have everything you need to use the CRM module.
 
+# don't forget to use .htaccess to block the cache if you store it in your assets folder
+RedirectMatch 404 ^/assets/jsoncache/.*$
+
 # Using the Envornment version:
 ==================
 
