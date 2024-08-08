@@ -3,7 +3,7 @@ SilverStripe\Core\Injector\Injector:
     factory: SilverStripe\Core\Cache\CacheFactory
     constructor:
       namespace: 'OP'
-      defaultLifetime: 3600
+      defaultLifetime: 0
       backend: 'Filesystem'
       disable-container: true
       directory: 'assets/jsoncache'
