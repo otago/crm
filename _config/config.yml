@@ -1,9 +1,8 @@
 SilverStripe\Core\Injector\Injector:
   Psr\SimpleCache\CacheInterface.OP:
-    factory: SilverStripe\Core\Cache\CacheFactory
+    factory: OP\AssetCacheFactory
     constructor:
       namespace: 'OP'
-      defaultLifetime: 0
+      defaultLifetime: 360000000
       backend: 'Filesystem'
       disable-container: true
-      directory: 'assets/jsoncache'
