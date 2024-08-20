@@ -12,7 +12,7 @@ class AssetCacheFactory extends FilesystemCacheFactory
 {
     public function __construct($directory = null)
     {
-        $directory =  Path::join(ASSETS_PATH, 'jsoncache');
+        $directory = Path::join(ASSETS_PATH, 'jsoncache');
         parent::__construct($directory);
     }
 }
