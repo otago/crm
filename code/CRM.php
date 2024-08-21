@@ -120,8 +120,8 @@ class CRM
         $code = curl_getinfo($session, CURLINFO_HTTP_CODE);
 
         if ($code !== 200) {
-            Injector::inst()->get(LoggerInterface::class)->info('Error in RequestAccessToken' . curl_error($session));
-            Injector::inst()->get(LoggerInterface::class)->info('Error in RequestAccessToken' .  json_encode(curl_getinfo($session)));
+            Injector::inst()->get(LoggerInterface::class)->info('Error in RequestAccessToken curl_error:' . curl_error($session));
+            Injector::inst()->get(LoggerInterface::class)->info('Error in RequestAccessToken curl_getinfo:' .  json_encode(curl_getinfo($session)));
             Injector::inst()->get(LoggerInterface::class)->info('Error in RequestAccessToken ENDPOINT' .  $endpoint);
             throw new Exception('CRM did not return an access token. With code: ' . $code);
         }
