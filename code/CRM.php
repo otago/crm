@@ -12,6 +12,7 @@ use Fiber;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Dev\Backtrace;
 use SilverStripe\Dev\Debug;
 
 class CRM
@@ -19,8 +20,10 @@ class CRM
     use Injectable;
     use Configurable;
 
-    // the token used to send and retrive data from the CRM API REST service
-    private $access_token = '';
+    /**
+     * @var CacheInterface
+     */
+    private $cache = null;
 
     /*
     * @config default headers used for communication
@@ -37,13 +40,7 @@ class CRM
      */
     public function __construct()
     {
-        $cache = Injector::inst()->get(CacheInterface::class . '.OP');
-
-        if ($cache->has($this->getCacheKey())) {
-            $this->access_token = $cache->get($this->getCacheKey());
-        } else {
-            $this->access_token = $this->RequestAccessToken();
-        }
+        $this->cache = Injector::inst()->get(CacheInterface::class . '.OP');
     }
 
     /**
@@ -61,7 +58,10 @@ class CRM
      */
     public function getAccessToken()
     {
-        return $this->access_token;
+        if ($this->cache->has($this->getCacheKey())) {
+            return $this->cache->get($this->getCacheKey());
+        }
+        return $this->RequestAccessToken();
     }
 
 
@@ -86,7 +86,8 @@ class CRM
      * 
      * @return string
      */
-    public function getResourceURL() {
+    public function getResourceURL()
+    {
         return Environment::getEnv('AZUREAPPLICATIONRESOURCELOCATION');
     }
 
@@ -132,8 +133,7 @@ class CRM
 
         // set the cache and the time to live according to the result
         if (isset($content->expires_in)) {
-            $cache = Injector::inst()->get(CacheInterface::class . '.OP');
-            $this->access_token = $cache->set($this->getCacheKey(), $content->access_token, (int) $content->expires_in);
+            $this->cache->set($this->getCacheKey(), $content->access_token, (int) $content->expires_in);
         }
 
         return $content->access_token;
@@ -166,18 +166,19 @@ class CRM
     public function fetch($webservice_url_str, $method = "GET", $postdata = null, $extra_headers = [])
     {
         $session = curl_init($webservice_url_str);
-
+    
         // build the auth headers
         $authheader = array_merge($this->config()->headers, [
-            "Authorization" => " Bearer " .  $this->access_token
+            "Authorization" => " Bearer " .  $this->getAccessToken()
         ]);
+
         $headers = array_merge($authheader, $extra_headers);
         curl_setopt($session, CURLOPT_HTTPHEADER, $this->HeadersDeAssociative($headers));
 
         // return data and try for 5 seconds
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_CONNECTTIMEOUT, 5);
-       // curl_setopt($session, CURLOPT_VERBOSE, 1);
+        // curl_setopt($session, CURLOPT_VERBOSE, 1);
         curl_setopt($session, CURLOPT_HEADER, 1);
 
         //CWP proxy stuff
@@ -220,9 +221,8 @@ class CRM
         $header_size = curl_getinfo($session, CURLINFO_HEADER_SIZE);
         $resultheaders = substr($response, 0, $header_size);
         $content = substr($response, $header_size);
-
+        
         curl_close($session);
-
         return new CRMResult($content, $code, $resultheaders);
     }
 
@@ -306,7 +306,7 @@ class CRM
             curl_setopt($session, CURLOPT_HTTPHEADER, [
                 'Content-Type: multipart/mixed; boundary=' . $boundary,
                 'Content-Length: ' . strlen($body),
-                'Authorization: Bearer ' .  $accesstoken,
+                'Authorization: Bearer ' .  $accesstoken
             ]);
 
             // Execute cURL session
