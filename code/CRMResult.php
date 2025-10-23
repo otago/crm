@@ -3,7 +3,7 @@
 namespace OP;
 
 use SilverStripe\ORM\DataObject;
-use SilverStripe\Model\List\ArrayList;
+use SilverStripe\ORM\ArrayList;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\Core\Config\Configurable;
